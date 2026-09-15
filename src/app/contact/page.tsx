@@ -11,7 +11,7 @@ import {
 import { Layout } from "antd";
 
 import { StoreHeader } from "@/components/store-header";
-import { contact, contactLinks } from "@/lib/contact";
+import { contact, contactLinks, contactNeedsSetup } from "@/lib/contact";
 
 const { Content } = Layout;
 
@@ -55,8 +55,14 @@ export default function ContactPage() {
       <Content className="mx-auto w-full max-w-lg flex-1 px-4 py-8 sm:px-6">
         <h1 className="font-serif text-3xl text-hek-ink">Contact us</h1>
         <p className="mt-2 text-sm text-hek-muted">
-          Questions about orders, products, or delivery, we&apos;re happy to help.
+          Questions about orders, products, or delivery — we&apos;re happy to help.
         </p>
+        {contactNeedsSetup() ? (
+          <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            Support details are placeholders. Update{" "}
+            <code className="text-xs">src/lib/contact.ts</code> before launch.
+          </p>
+        ) : null}
 
         <div className="mt-8 rounded-xl border border-hek-primary/15 bg-white p-6 shadow-sm">
           <ContactRow

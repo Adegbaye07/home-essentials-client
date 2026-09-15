@@ -75,10 +75,10 @@ export default function StorePage() {
       <Content className="mx-auto w-full max-w-6xl flex-1 px-4 pb-8 pt-4 sm:px-6">
         <header className="mb-8 pt-14 sm:pt-16">
           <h1 className="font-serif text-3xl text-hek-primary sm:text-4xl">
-            Home Essentials by Kamgol
+            Essentials by Kamgol
           </h1>
           <p className="mt-2 max-w-2xl text-hek-muted md:text-lg">
-            Foot mats, door mats, center mats, rugs, and cleaning essentials.
+            Foot mats, door mats, center mats, rugs, and other home essentials.
           </p>
         </header>
         <Tabs

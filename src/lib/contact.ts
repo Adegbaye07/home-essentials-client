@@ -1,9 +1,19 @@
-/** Placeholder contact details — replace before launch. */
+/**
+ * Contact details shown on /contact.
+ * Replace every placeholder value before launch.
+ */
 export const contact = {
-  email: "customers@example.com",
-  phoneDisplay: "00000000000",
-  /** Nigeria E.164 without leading + (for tel: and wa.me). */
+  /** Public support inbox */
+  email: "REPLACE_WITH_SUPPORT_EMAIL",
+  /** Human-readable phone (shown in UI) */
+  phoneDisplay: "REPLACE_WITH_PHONE",
+  /**
+   * Nigeria E.164 without leading + (digits only).
+   * Used for tel: and https://wa.me/ links.
+   * Example: 2348012345678
+   */
   phoneE164: "2340000000000",
+  /** Instagram username without @ */
   instagramHandle: "homeessentials_by_kamgol",
 } as const;
 
@@ -13,3 +23,12 @@ export const contactLinks = {
   whatsapp: `https://wa.me/${contact.phoneE164}`,
   instagram: `https://www.instagram.com/${contact.instagramHandle}/`,
 } as const;
+
+/** True when default placeholders are still in place. */
+export function contactNeedsSetup(): boolean {
+  return (
+    contact.email.startsWith("REPLACE_") ||
+    contact.phoneDisplay.startsWith("REPLACE_") ||
+    contact.phoneE164 === "2340000000000"
+  );
+}
