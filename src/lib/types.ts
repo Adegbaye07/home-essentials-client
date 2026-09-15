@@ -69,4 +69,14 @@ export type TrackResult = {
   status: string;
   statusHistory: { status: string; at: string; note?: string }[];
   totalAmountKobo: number;
+  items?: {
+    productTitle: string;
+    variant: string;
+    size?: string;
+    unit: string;
+    piecesPerBundle?: number;
+    quantity: number;
+    unitPriceKobo: number;
+    lineTotalKobo: number;
+  }[];
 };

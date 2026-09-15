@@ -1,5 +1,6 @@
-import { createOrder } from "@/lib/api";
-import { readCart } from "@/lib/cart";
+import { abandonPayment, createOrder } from "@/lib/api";
+import { clearCart, readCart } from "@/lib/cart";
+import { openPaystackForOrder } from "@/lib/paystack-checkout";
 
 export type CheckoutCustomerValues = {
   name: string;
@@ -9,17 +10,20 @@ export type CheckoutCustomerValues = {
 };
 
 export type SubmitCartCheckoutCallbacks = {
-  onSuccess: (orderId: string) => void;
+  onSuccess: (reference: string) => void;
+  onCancelWarning: (message: string) => void;
+  onCancelInfo: (message: string) => void;
 };
 
-/**
- * Phase 4: create the shop order only (no Paystack).
- * Phase 5 will open Paystack after this succeeds.
- */
+export type CheckoutRouter = {
+  push: (href: string) => void;
+};
+
 export async function submitCartCheckout(
   values: CheckoutCustomerValues,
+  router: CheckoutRouter,
   callbacks: SubmitCartCheckoutCallbacks,
-): Promise<{ orderId: string; totalAmountKobo: number; paystackReference: string }> {
+): Promise<void> {
   const cart = readCart();
   if (cart.length === 0) {
     throw new Error("Your cart is empty");
@@ -36,10 +40,26 @@ export async function submitCartCheckout(
     customer: values,
   });
 
-  callbacks.onSuccess(order.id);
-  return {
+  await openPaystackForOrder({
     orderId: order.id,
-    totalAmountKobo: order.totalAmountKobo,
-    paystackReference: order.paystackReference,
-  };
+    email: values.email,
+    onSuccess: (reference) => {
+      clearCart();
+      callbacks.onSuccess(reference);
+      router.push(`/checkout/success?reference=${encodeURIComponent(reference)}`);
+    },
+    onCancel: (reference) => {
+      void (async () => {
+        try {
+          await abandonPayment(reference, values.email);
+        } catch {
+          callbacks.onCancelWarning("Payment cancelled");
+        }
+        callbacks.onCancelInfo("Payment cancelled — your cart is still saved");
+        router.push(
+          `/checkout/success?reference=${encodeURIComponent(reference)}&pending=1`,
+        );
+      })();
+    },
+  });
 }

@@ -3,10 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Button, Layout, Result, Spin } from "antd";
+import { Button, Layout, Result, Spin, message } from "antd";
 
 import { StoreHeader } from "@/components/store-header";
 import { verifyPayment } from "@/lib/api";
+import { openPaystackForOrder } from "@/lib/paystack-checkout";
 
 const { Content } = Layout;
 
@@ -31,9 +32,12 @@ export default function CheckoutSuccessInner() {
 
   const [status, setStatus] = useState<string | null>(null);
   const [tracking, setTracking] = useState<string | null>(null);
+  const [orderId, setOrderId] = useState<string | null>(null);
+  const [customerEmail, setCustomerEmail] = useState<string | null>(null);
   const [loading, setLoading] = useState(Boolean(reference));
   const [verifyFailed, setVerifyFailed] = useState(false);
   const [orderExpired, setOrderExpired] = useState(false);
+  const [resuming, setResuming] = useState(false);
   const stopPollRef = useRef(false);
 
   useEffect(() => {
@@ -54,6 +58,8 @@ export default function CheckoutSuccessInner() {
         setVerifyFailed(false);
         setOrderExpired(false);
         setStatus(v.status);
+        setOrderId(v.orderId);
+        setCustomerEmail(v.customerEmail);
         if (v.trackingNumber) setTracking(v.trackingNumber);
 
         if (isOrderPaid(v.status)) {
@@ -89,6 +95,30 @@ export default function CheckoutSuccessInner() {
       window.clearInterval(id);
     };
   }, [reference, pendingQuery]);
+
+  async function handleCompletePayment() {
+    if (!orderId || !customerEmail) {
+      message.error("Missing order details — refresh and try again");
+      return;
+    }
+    setResuming(true);
+    try {
+      await openPaystackForOrder({
+        orderId,
+        email: customerEmail,
+        onSuccess: (ref) => {
+          window.location.href = `/checkout/success?reference=${encodeURIComponent(ref)}`;
+        },
+        onCancel: (ref) => {
+          window.location.href = `/checkout/success?reference=${encodeURIComponent(ref)}&pending=1`;
+        },
+      });
+    } catch (e) {
+      message.error(e instanceof Error ? e.message : "Could not reopen payment");
+    } finally {
+      setResuming(false);
+    }
+  }
 
   if (!reference) {
     return (
@@ -192,8 +222,8 @@ export default function CheckoutSuccessInner() {
       : "We will email your tracking ID shortly."
     : unpaidAwaiting
       ? pendingQuery || status === "abandoned"
-        ? "Go back to your cart to change items, or return to the store."
-        : "Pay from your cart to confirm it."
+        ? "Your cart is still saved. Complete payment below, or return to the cart to change items."
+        : "Finish payment to confirm your order."
       : tracking
         ? `Your tracking ID: ${tracking}`
         : "We will email your tracking ID once payment is confirmed.";
@@ -204,10 +234,17 @@ export default function CheckoutSuccessInner() {
     <div className="flex flex-wrap justify-center gap-3">
       {unpaidAwaiting ? (
         <>
+          <Button
+            type="primary"
+            size="large"
+            loading={resuming}
+            onClick={() => void handleCompletePayment()}
+            disabled={!orderId || !customerEmail}
+          >
+            Complete payment
+          </Button>
           <Link href="/cart">
-            <Button type="primary" size="large">
-              Back to cart
-            </Button>
+            <Button size="large">Back to cart</Button>
           </Link>
           <Link href="/store">
             <Button size="large">Go to store</Button>

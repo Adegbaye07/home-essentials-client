@@ -5,7 +5,7 @@ import { Button, Form, Input, Layout, Tag, Timeline, message } from "antd";
 
 import { StoreHeader } from "@/components/store-header";
 import { trackOrder } from "@/lib/api";
-import { orderStatusColor, orderStatusLabel } from "@/lib/constants";
+import { orderStatusColor, orderStatusLabel, unitDisplayLabel } from "@/lib/constants";
 import { formatDateTime, formatKobo } from "@/lib/format";
 import type { TrackResult } from "@/lib/types";
 
@@ -56,7 +56,7 @@ export default function TrackPage() {
       <Content className="mx-auto w-full max-w-lg flex-1 px-4 py-8 sm:px-6">
         <h1 className="font-serif text-3xl text-hek-ink">Track your order</h1>
         <p className="mt-2 text-sm text-hek-muted">
-          Enter your tracking ID and the email used at checkout.
+          Enter your tracking ID (from your confirmation email) and the email used at checkout.
         </p>
         <Form layout="vertical" className="mt-8" onFinish={onFinish}>
           <Form.Item name="trackingNumber" label="Tracking ID" rules={[{ required: true }]}>
@@ -74,7 +74,22 @@ export default function TrackPage() {
             <Tag color={orderStatusColor(result.status)} className="m-0">
               {orderStatusLabel(result.status)}
             </Tag>
-            <p className="mt-2 text-sm text-hek-muted">Total {formatKobo(result.totalAmountKobo)}</p>
+            <p className="mt-2 font-medium text-hek-ink">{result.trackingNumber}</p>
+            <p className="mt-1 text-sm text-hek-muted">Total {formatKobo(result.totalAmountKobo)}</p>
+            {result.items && result.items.length > 0 ? (
+              <ul className="mt-4 space-y-2 border-t border-hek-primary/10 pt-4 text-sm">
+                {result.items.map((item, i) => (
+                  <li key={`${item.productTitle}-${i}`} className="text-hek-muted">
+                    <span className="font-medium text-hek-ink">{item.productTitle}</span>
+                    {" — "}
+                    {item.variant}
+                    {item.size ? ` · ${item.size}` : ""}
+                    {" · "}
+                    {unitDisplayLabel(item.unit, item.piecesPerBundle)} × {item.quantity}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
             <div className="mt-6">
               <OrderTimeline history={result.statusHistory} />
             </div>
