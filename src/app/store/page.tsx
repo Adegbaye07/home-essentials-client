@@ -6,6 +6,7 @@ import { Button, Layout, Spin, Tabs } from "antd";
 
 import { ProductCard } from "@/components/product-card";
 import { StoreHeader } from "@/components/store-header";
+import { BrandMark } from "@/components/brand-mark";
 import { STORE_TAB_CATEGORIES } from "@/lib/constants";
 import { listProducts } from "@/lib/api";
 import type { Product } from "@/lib/types";
@@ -74,12 +75,12 @@ export default function StorePage() {
       <StoreHeader active="store" overlay />
       <Content className="mx-auto w-full max-w-6xl flex-1 px-4 pb-8 pt-4 sm:px-6">
         <header className="mb-8 pt-14 sm:pt-16">
-          <h1 className="font-serif text-3xl text-hek-primary sm:text-4xl">
-            Essentials by Kamgol
+          <h1 className="text-hek-primary">
+            <BrandMark size="lg" header="Store" />
           </h1>
-          <p className="mt-2 max-w-2xl text-hek-muted md:text-lg">
+          {/* <p className="mt-3 max-w-2xl text-hek-muted md:text-lg">
             Foot mats, door mats, center mats, rugs, and other home essentials.
-          </p>
+          </p> */}
         </header>
         <Tabs
           activeKey={category}
@@ -121,9 +122,10 @@ export default function StorePage() {
         )}
       </Content>
       <Footer className="border-t border-hek-primary/10 bg-white text-center text-sm text-hek-muted">
-        <p>
-          Home Essentials by Kamgol © {new Date().getFullYear()}
-          {" · "}
+        <p className="inline-flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+          <BrandMark size="sm" className="text-hek-ink" />
+          <span>© {new Date().getFullYear()}</span>
+          <span aria-hidden>·</span>
           <Link href="/contact" className="text-hek-primary hover:underline">
             Contact
           </Link>

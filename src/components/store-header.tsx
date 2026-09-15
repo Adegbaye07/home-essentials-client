@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { cartLineCount, readCart } from "@/lib/cart";
 import { CART_STORAGE_KEY } from "@/lib/constants";
 import { brand } from "@/lib/brand";
+import { BrandMark } from "@/components/brand-mark";
 
 const SCROLL_THRESHOLD = 28;
 
@@ -69,7 +70,7 @@ export function StoreHeader({ active, overlay = false }: Props) {
   };
 
   const logoClass =
-    "store-header-logo font-serif text-xl tracking-wide no-underline transition-colors duration-300 sm:text-2xl";
+    "store-header-logo no-underline transition-colors duration-300";
 
   const cartIconColor = solid ? "#ffffff" : brand.primary;
 
@@ -83,8 +84,8 @@ export function StoreHeader({ active, overlay = false }: Props) {
         }`}
       >
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
-          <Link href="/store" className={`${logoClass} transition-colors duration-300`}>
-            Home Essentials by Kamgol
+          <Link href="/store" className={logoClass}>
+            <BrandMark size="md" />
           </Link>
           <nav className="flex items-center gap-1 text-sm sm:gap-2 sm:text-base">
             <Link href="/store" className={navLinkClass("store")}>

@@ -4,17 +4,19 @@
  */
 export const contact = {
   /** Public support inbox */
-  email: "REPLACE_WITH_SUPPORT_EMAIL",
+  email: "customers@kamgol.store",
   /** Human-readable phone (shown in UI) */
-  phoneDisplay: "REPLACE_WITH_PHONE",
+  phoneDisplay: "+2349127826298",
   /**
    * Nigeria E.164 without leading + (digits only).
    * Used for tel: and https://wa.me/ links.
    * Example: 2348012345678
    */
-  phoneE164: "2340000000000",
+  phoneE164: "2349127826298",
   /** Instagram username without @ */
-  instagramHandle: "homeessentials_by_kamgol",
+  instagramHandle: "kamgol_access",
+  /** Physical store / office address (shown on /contact) */
+  address: "15, Owo street, Off Layi Oyekanmi street, Ilasamaja, Mushin, Lagos",
 } as const;
 
 export const contactLinks = {
@@ -22,13 +24,5 @@ export const contactLinks = {
   tel: `tel:+${contact.phoneE164}`,
   whatsapp: `https://wa.me/${contact.phoneE164}`,
   instagram: `https://www.instagram.com/${contact.instagramHandle}/`,
+  maps: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(contact.address)}`,
 } as const;
-
-/** True when default placeholders are still in place. */
-export function contactNeedsSetup(): boolean {
-  return (
-    contact.email.startsWith("REPLACE_") ||
-    contact.phoneDisplay.startsWith("REPLACE_") ||
-    contact.phoneE164 === "2340000000000"
-  );
-}
