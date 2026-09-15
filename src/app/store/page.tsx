@@ -76,7 +76,7 @@ export default function StorePage() {
       <Content className="mx-auto w-full max-w-6xl flex-1 px-4 pb-8 pt-4 sm:px-6">
         <header className="mb-8 pt-14 sm:pt-16">
           <h1 className="text-hek-primary">
-            <BrandMark size="lg" header="Store" />
+            <BrandMark size="lg" header="Store" showIcon={false} />
           </h1>
           {/* <p className="mt-3 max-w-2xl text-hek-muted md:text-lg">
             Foot mats, door mats, center mats, rugs, and other home essentials.
