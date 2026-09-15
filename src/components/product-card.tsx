@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRef } from "react";
 import { ShoppingCartOutlined } from "@ant-design/icons";
 import { Button, message, Tag } from "antd";
 
@@ -16,13 +17,47 @@ import {
   defaultSize,
   defaultVariant,
   productMainImage,
+  productVideoUrl,
 } from "@/lib/product-helpers";
 import type { Product } from "@/lib/types";
+
+function CardHoverVideo({ src, title }: { src: string; title: string }) {
+  const ref = useRef<HTMLVideoElement>(null);
+
+  return (
+    <span
+      className="absolute inset-0 block"
+      onMouseEnter={() => {
+        const el = ref.current;
+        if (!el) return;
+        void el.play().catch(() => {});
+      }}
+      onMouseLeave={() => {
+        const el = ref.current;
+        if (!el) return;
+        el.pause();
+        el.currentTime = 0;
+      }}
+    >
+      <video
+        ref={ref}
+        src={src}
+        title={title}
+        className="h-full w-full object-cover transition group-hover:scale-[1.02]"
+        muted
+        playsInline
+        loop
+        preload="metadata"
+      />
+    </span>
+  );
+}
 
 export function ProductCard({ product }: { product: Product }) {
   const unitKobo = cataloguePiecePriceKobo(product);
   const variant = defaultVariant(product);
   const image = productMainImage(product);
+  const video = productVideoUrl(product);
   const size = defaultSize(product);
   const cleaning = isCleaningCategory(product.category);
 
@@ -49,7 +84,9 @@ export function ProductCard({ product }: { product: Product }) {
   return (
     <article className="group flex h-full flex-col overflow-hidden rounded-xl border border-hek-primary/15 bg-white shadow-sm transition hover:shadow-md">
       <Link href={`/store/${product.id}`} className="relative block aspect-4/3 bg-hek-bg">
-        {image ? (
+        {video ? (
+          <CardHoverVideo src={video} title={product.title} />
+        ) : image ? (
           <Image
             src={image}
             alt={product.title}

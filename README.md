@@ -32,8 +32,8 @@ Open [http://localhost:3000/store](http://localhost:3000/store).
 
 | Path | Purpose |
 |------|---------|
-| `/store` | Catalogue (category tabs) |
-| `/store/[id]` | PDP — variant, size, piece/bundle or piece/dozen |
+| `/store` | Catalogue (category tabs; authenticity video plays on hover when set) |
+| `/store/[id]` | PDP — video first (muted autoplay) when set; variant, size, piece/bundle or piece/dozen |
 | `/cart` | Cart + customer details + Paystack |
 | `/checkout` | Redirects to `/cart` |
 | `/checkout/success` | Payment result; **Complete payment** if cancelled (`?pending=1`) |

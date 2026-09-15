@@ -31,6 +31,7 @@ import {
   defaultVariant,
   imageUrlForVariant,
   productVariantGallery,
+  productVideoUrl,
 } from "@/lib/product-helpers";
 import type { OrderUnit, Product } from "@/lib/types";
 
@@ -146,6 +147,7 @@ export default function ProductDetailPage() {
                     label: g.variant,
                   }))}
                   title={product.title}
+                  videoUrl={productVideoUrl(product)}
                   selectedIndex={gallerySelectedIndex}
                   onSelectIndex={(index) => {
                     const picked = variantGallery[index];

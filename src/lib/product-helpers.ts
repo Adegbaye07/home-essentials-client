@@ -20,6 +20,12 @@ export function productMainImage(product: Product, variant?: string): string | u
   return product.variantImages?.[0]?.imageUrl;
 }
 
+/** Product-level authenticity video URL, if set. */
+export function productVideoUrl(product: Product): string | undefined {
+  const url = product.videoUrl?.trim();
+  return url || undefined;
+}
+
 export type VariantGalleryItem = {
   variant: string;
   imageUrl: string;
