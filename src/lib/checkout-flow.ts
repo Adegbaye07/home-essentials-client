@@ -1,6 +1,5 @@
-import { abandonPayment, createOrder } from "@/lib/api";
-import { clearCart, readCart } from "@/lib/cart";
-import { openPaystackForOrder } from "@/lib/paystack-checkout";
+import { createOrder } from "@/lib/api";
+import { readCart } from "@/lib/cart";
 
 export type CheckoutCustomerValues = {
   name: string;
@@ -10,20 +9,17 @@ export type CheckoutCustomerValues = {
 };
 
 export type SubmitCartCheckoutCallbacks = {
-  onSuccess: (reference: string) => void;
-  onCancelWarning: (message: string) => void;
-  onCancelInfo: (message: string) => void;
+  onSuccess: (orderId: string) => void;
 };
 
-export type CheckoutRouter = {
-  push: (href: string) => void;
-};
-
+/**
+ * Phase 4: create the shop order only (no Paystack).
+ * Phase 5 will open Paystack after this succeeds.
+ */
 export async function submitCartCheckout(
   values: CheckoutCustomerValues,
-  router: CheckoutRouter,
   callbacks: SubmitCartCheckoutCallbacks,
-): Promise<void> {
+): Promise<{ orderId: string; totalAmountKobo: number; paystackReference: string }> {
   const cart = readCart();
   if (cart.length === 0) {
     throw new Error("Your cart is empty");
@@ -32,35 +28,18 @@ export async function submitCartCheckout(
   const order = await createOrder({
     items: cart.map((l) => ({
       productId: l.productId,
+      variant: l.variant,
       size: l.size,
-      color: l.color,
+      unit: l.unit,
       quantity: l.quantity,
     })),
     customer: values,
   });
 
-  await openPaystackForOrder({
+  callbacks.onSuccess(order.id);
+  return {
     orderId: order.id,
-    email: values.email,
-    onSuccess: (reference) => {
-      clearCart();
-      callbacks.onSuccess(reference);
-      router.push(`/checkout/success?reference=${encodeURIComponent(reference)}`);
-    },
-    onCancel: (reference) => {
-      void (async () => {
-        try {
-          await abandonPayment(reference, values.email);
-        } catch {
-          callbacks.onCancelWarning(
-            "Payment cancelled",
-          );
-        }
-        callbacks.onCancelInfo("Payment cancelled");
-        router.push(
-          `/checkout/success?reference=${encodeURIComponent(reference)}&pending=1`,
-        );
-      })();
-    },
-  });
+    totalAmountKobo: order.totalAmountKobo,
+    paystackReference: order.paystackReference,
+  };
 }

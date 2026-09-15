@@ -50,7 +50,7 @@ export function StoreHeader({ active, overlay = false }: Props) {
   const solid = !overlay || scrolled;
 
   const headerFg = solid ? "#ffffff" : brand.primary;
-  const headerHoverBg = solid ? "rgba(255, 255, 255, 0.1)" : "rgba(111, 78, 55, 0.12)";
+  const headerHoverBg = solid ? "rgba(255, 255, 255, 0.1)" : "rgba(174, 120, 32, 0.12)";
 
   const headerStyle = {
     ["--store-header-fg" as string]: headerFg,
@@ -111,7 +111,7 @@ export function StoreHeader({ active, overlay = false }: Props) {
                 count={lineCount}
                 size="small"
                 offset={[-2, 2]}
-                color="#c4956a"
+                color={brand.primary}
                 showZero={false}
               >
                 <ShoppingCartOutlined

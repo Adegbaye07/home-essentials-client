@@ -1,5 +1,9 @@
 import { CART_STORAGE_KEY } from "./constants";
-import type { CartLine } from "./types";
+import type { CartLine, OrderUnit } from "./types";
+
+function lineKey(line: Pick<CartLine, "productId" | "variant" | "size" | "unit">): string {
+  return `${line.productId}|${line.variant}|${line.size ?? ""}|${line.unit}`;
+}
 
 export function readCart(): CartLine[] {
   if (typeof window === "undefined") return [];
@@ -7,7 +11,15 @@ export function readCart(): CartLine[] {
     const raw = localStorage.getItem(CART_STORAGE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw) as CartLine[];
-    return Array.isArray(parsed) ? parsed : [];
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (l) =>
+        l &&
+        typeof l.productId === "string" &&
+        typeof l.variant === "string" &&
+        typeof l.unit === "string" &&
+        typeof l.quantity === "number",
+    );
   } catch {
     return [];
   }
@@ -19,10 +31,8 @@ export function writeCart(lines: CartLine[]): void {
 
 export function addToCart(line: CartLine): CartLine[] {
   const cart = readCart();
-  const idx = cart.findIndex(
-    (l) =>
-      l.productId === line.productId && l.size === line.size && l.color === line.color,
-  );
+  const key = lineKey(line);
+  const idx = cart.findIndex((l) => lineKey(l) === key);
   if (idx >= 0) {
     cart[idx] = { ...cart[idx], quantity: cart[idx].quantity + line.quantity };
   } else {
@@ -52,22 +62,16 @@ export function updateCartLineQuantity(index: number, quantity: number): CartLin
   return cart;
 }
 
-/** @deprecated use updateCartLineQuantity */
-export function updateCartLine(index: number, quantity: number): CartLine[] {
-  return updateCartLineQuantity(index, quantity);
-}
-
-export function updateCartLineColor(index: number, newColor: string, imageUrl?: string): CartLine[] {
+export function updateCartLineVariant(
+  index: number,
+  newVariant: string,
+  imageUrl?: string,
+): CartLine[] {
   const cart = readCart();
   if (index < 0 || index >= cart.length) return cart;
   const line = cart[index];
-  const mergeIdx = cart.findIndex(
-    (l, i) =>
-      i !== index &&
-      l.productId === line.productId &&
-      l.size === line.size &&
-      l.color === newColor,
-  );
+  const next = { ...line, variant: newVariant, imageUrl: imageUrl ?? line.imageUrl };
+  const mergeIdx = cart.findIndex((l, i) => i !== index && lineKey(l) === lineKey(next));
   if (mergeIdx >= 0) {
     cart[mergeIdx] = {
       ...cart[mergeIdx],
@@ -76,11 +80,7 @@ export function updateCartLineColor(index: number, newColor: string, imageUrl?: 
     };
     cart.splice(index, 1);
   } else {
-    cart[index] = {
-      ...line,
-      color: newColor,
-      imageUrl: imageUrl ?? line.imageUrl,
-    };
+    cart[index] = next;
   }
   writeCart(cart);
   return cart;
@@ -90,15 +90,8 @@ export function updateCartLineSize(index: number, newSize: string): CartLine[] {
   const cart = readCart();
   if (index < 0 || index >= cart.length) return cart;
   const line = cart[index];
-  if (line.size === newSize) return cart;
-
-  const mergeIdx = cart.findIndex(
-    (l, i) =>
-      i !== index &&
-      l.productId === line.productId &&
-      l.size === newSize &&
-      l.color === line.color,
-  );
+  const next = { ...line, size: newSize };
+  const mergeIdx = cart.findIndex((l, i) => i !== index && lineKey(l) === lineKey(next));
   if (mergeIdx >= 0) {
     cart[mergeIdx] = {
       ...cart[mergeIdx],
@@ -106,7 +99,35 @@ export function updateCartLineSize(index: number, newSize: string): CartLine[] {
     };
     cart.splice(index, 1);
   } else {
-    cart[index] = { ...line, size: newSize };
+    cart[index] = next;
+  }
+  writeCart(cart);
+  return cart;
+}
+
+export function updateCartLineUnit(
+  index: number,
+  newUnit: OrderUnit,
+  piecesPerBundle?: number,
+): CartLine[] {
+  const cart = readCart();
+  if (index < 0 || index >= cart.length) return cart;
+  const line = cart[index];
+  const next: CartLine = {
+    ...line,
+    unit: newUnit,
+    piecesPerBundle: newUnit === "bundle" ? piecesPerBundle : undefined,
+  };
+  const mergeIdx = cart.findIndex((l, i) => i !== index && lineKey(l) === lineKey(next));
+  if (mergeIdx >= 0) {
+    cart[mergeIdx] = {
+      ...cart[mergeIdx],
+      quantity: cart[mergeIdx].quantity + line.quantity,
+      piecesPerBundle: next.piecesPerBundle ?? cart[mergeIdx].piecesPerBundle,
+    };
+    cart.splice(index, 1);
+  } else {
+    cart[index] = next;
   }
   writeCart(cart);
   return cart;
@@ -120,7 +141,6 @@ export function cartCount(lines: CartLine[]): number {
   return lines.reduce((n, l) => n + l.quantity, 0);
 }
 
-/** Distinct cart lines (badge / “items in cart”). */
 export function cartLineCount(lines: CartLine[]): number {
   return lines.length;
 }

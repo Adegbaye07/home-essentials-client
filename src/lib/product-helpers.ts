@@ -1,74 +1,84 @@
-import { SIZES } from "./constants";
-import { unitPriceKobo } from "./pricing";
-import type { Product, SizeVariant } from "./types";
+import { isCleaningCategory } from "./constants";
+import { resolveLinePrice } from "./pricing";
+import type { Product } from "./types";
 
-/** Smallest size code present on the product (by S→XXL order). */
-export function smallestSizeVariant(product: Product): SizeVariant | undefined {
-  if (!product.sizes.length) return undefined;
-  const rank = (code: string) => {
-    const i = SIZES.indexOf(code as (typeof SIZES)[number]);
-    return i === -1 ? 999 : i;
-  };
-  let best = product.sizes[0];
-  for (const sv of product.sizes) {
-    if (rank(sv.code) < rank(best.code)) best = sv;
-  }
-  return best;
+export function defaultVariant(product: Product): string {
+  return product.variants[0] ?? "";
 }
 
-export function defaultColor(product: Product): string {
-  return product.colors[0] ?? "";
-}
-
-export function imageUrlForColor(product: Product, color: string): string | undefined {
-  const entry = product.colorImages?.find((ci) => ci.color === color);
+export function imageUrlForVariant(product: Product, variant: string): string | undefined {
+  const entry = product.variantImages?.find((vi) => vi.variant === variant);
   return entry?.imageUrl;
 }
 
-export function catalogueUnitPriceKobo(product: Product): number | null {
-  const sv = smallestSizeVariant(product);
-  if (!sv) return null;
-  try {
-    return unitPriceKobo(sv.tiers, 1);
-  } catch {
-    return null;
-  }
-}
-
-export function productMainImage(product: Product, color?: string): string | undefined {
-  const c = color ?? defaultColor(product);
-  if (c) {
-    const url = imageUrlForColor(product, c);
+export function productMainImage(product: Product, variant?: string): string | undefined {
+  const v = variant ?? defaultVariant(product);
+  if (v) {
+    const url = imageUrlForVariant(product, v);
     if (url) return url;
   }
-  return product.colorImages?.[0]?.imageUrl;
+  return product.variantImages?.[0]?.imageUrl;
 }
 
-export function galleryImagesForColor(product: Product, color: string): string[] {
-  const url = imageUrlForColor(product, color);
-  return url ? [url] : [];
-}
-
-export type ColorGalleryItem = {
-  color: string;
+export type VariantGalleryItem = {
+  variant: string;
   imageUrl: string;
 };
 
-/** One thumbnail per product color (order follows `product.colors`). */
-export function productColorGallery(product: Product): ColorGalleryItem[] {
-  const items: ColorGalleryItem[] = [];
-  for (const c of product.colors) {
-    const imageUrl = imageUrlForColor(product, c);
+/** One thumbnail per product variant (order follows `product.variants`). */
+export function productVariantGallery(product: Product): VariantGalleryItem[] {
+  const items: VariantGalleryItem[] = [];
+  for (const v of product.variants) {
+    const imageUrl = imageUrlForVariant(product, v);
     if (imageUrl) {
-      items.push({ color: c, imageUrl });
+      items.push({ variant: v, imageUrl });
     }
   }
   if (items.length === 0) {
-    for (const ci of product.colorImages ?? []) {
-      if (ci.imageUrl) {
-        items.push({ color: ci.color, imageUrl: ci.imageUrl });
+    for (const vi of product.variantImages ?? []) {
+      if (vi.imageUrl) {
+        items.push({ variant: vi.variant, imageUrl: vi.imageUrl });
       }
     }
   }
   return items;
+}
+
+export function defaultSize(product: Product): string {
+  if (isCleaningCategory(product.category)) return "";
+  return product.sizePricings?.[0]?.size ?? "";
+}
+
+/** Lowest piece price for catalogue cards. */
+export function cataloguePiecePriceKobo(product: Product): number | null {
+  if (isCleaningCategory(product.category)) {
+    return product.cleaningPricing?.piecePriceKobo ?? null;
+  }
+  const prices = (product.sizePricings ?? []).map((sp) => sp.piecePriceKobo).filter((p) => p > 0);
+  if (prices.length === 0) return null;
+  return Math.min(...prices);
+}
+
+export function productPriceRangeKobo(product: Product): { min: number; max: number } | null {
+  const prices: number[] = [];
+  if (isCleaningCategory(product.category) && product.cleaningPricing) {
+    prices.push(product.cleaningPricing.piecePriceKobo, product.cleaningPricing.dozenPriceKobo);
+  } else {
+    for (const sp of product.sizePricings ?? []) {
+      prices.push(sp.piecePriceKobo, sp.bundlePriceKobo);
+    }
+  }
+  if (prices.length === 0) return null;
+  return { min: Math.min(...prices), max: Math.max(...prices) };
+}
+
+/** True when the product can be quick-added with defaults. */
+export function canQuickAdd(product: Product): boolean {
+  if (!defaultVariant(product)) return false;
+  try {
+    resolveLinePrice(product, defaultSize(product) || undefined, "piece");
+    return true;
+  } catch {
+    return false;
+  }
 }

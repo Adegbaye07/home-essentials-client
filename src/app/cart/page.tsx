@@ -13,21 +13,28 @@ import { getProduct } from "@/lib/api";
 import {
   readCart,
   removeCartLine,
-  updateCartLineColor,
   updateCartLineQuantity,
   updateCartLineSize,
+  updateCartLineUnit,
+  updateCartLineVariant,
 } from "@/lib/cart";
-import { sizeDisplayLabel } from "@/lib/constants";
-import { formatDeliveryWindow } from "@/lib/delivery-display";
-import { formatKobo } from "@/lib/format";
-import { imageUrlForColor } from "@/lib/product-helpers";
 import {
+  DOZEN_PIECE_COUNT,
+  isCleaningCategory,
+  unitDisplayLabel,
+} from "@/lib/constants";
+import { FIXED_DELIVERY_COPY } from "@/lib/delivery-display";
+import { formatKobo } from "@/lib/format";
+import {
+  availableUnits,
   clampOrderQty,
   lineTotalKobo,
-  orderQtyLimitForTiers,
-  tierForQty,
+  resolveLinePrice,
+  sizePricingFor,
+  UNLIMITED_ORDER_QTY,
 } from "@/lib/pricing";
-import type { CartLine, Product } from "@/lib/types";
+import { imageUrlForVariant } from "@/lib/product-helpers";
+import type { CartLine, OrderUnit, Product } from "@/lib/types";
 
 const { Content } = Layout;
 
@@ -37,10 +44,11 @@ type PricedLine = CartLine & {
   cartIndex: number;
   unitKobo: number;
   lineKobo: number;
-  colors: string[];
+  variants: string[];
   sizes: string[];
+  units: OrderUnit[];
+  cleaning: boolean;
   maxOrderQty: number;
-  deliverySummary?: string;
 };
 
 async function priceCartLines(cart: CartLine[]): Promise<PricedLine[]> {
@@ -51,59 +59,57 @@ async function priceCartLines(cart: CartLine[]): Promise<PricedLine[]> {
     const line = cart[cartIndex];
     try {
       const p: Product = await getProduct(line.productId);
-      const sizeCodes = p.sizes.map((s) => s.code);
-      const sv = p.sizes.find((s) => s.code === line.size);
-      if (!sv) {
-        priced.push({
-          ...line,
-          cartIndex,
-          colors: p.colors,
-          sizes: sizeCodes,
-          unitKobo: 0,
-          lineKobo: 0,
-          maxOrderQty: orderQtyLimitForTiers([]),
-        });
-        continue;
-      }
-
-      const maxOrderQty = orderQtyLimitForTiers(sv.tiers);
-      let quantity = clampOrderQty(line.quantity, sv.tiers);
+      const cleaning = isCleaningCategory(p.category);
+      const sizes = (p.sizePricings ?? []).map((sp) => sp.size);
+      const units = availableUnits(p);
+      let quantity = clampOrderQty(line.quantity);
       if (quantity !== line.quantity) {
         qtyUpdates.push({ index: cartIndex, qty: quantity });
       }
 
-      const lineKobo = lineTotalKobo(sv.tiers, quantity);
-      const resolvedImage = line.imageUrl || imageUrlForColor(p, line.color);
-      let deliverySummary: string | undefined;
+      let unitKobo = 0;
+      let lineKobo = 0;
+      let piecesPerBundle = line.piecesPerBundle;
       try {
-        const tier = tierForQty(sv.tiers, quantity);
-        if (tier.deliveryDays >= 1) {
-          deliverySummary = formatDeliveryWindow(tier.deliveryDays);
-        }
+        const resolved = resolveLinePrice(
+          p,
+          cleaning ? undefined : line.size,
+          line.unit,
+        );
+        unitKobo = resolved.unitPriceKobo;
+        lineKobo = lineTotalKobo(unitKobo, quantity);
+        piecesPerBundle = resolved.piecesPerBundle;
       } catch {
-        deliverySummary = undefined;
+        unitKobo = 0;
+        lineKobo = 0;
       }
+
+      const resolvedImage = line.imageUrl || imageUrlForVariant(p, line.variant);
       priced.push({
         ...line,
         quantity,
+        piecesPerBundle,
         imageUrl: resolvedImage,
         cartIndex,
-        colors: p.colors,
-        sizes: sizeCodes,
-        unitKobo: lineKobo / quantity,
+        variants: p.variants,
+        sizes,
+        units,
+        cleaning,
+        unitKobo,
         lineKobo,
-        maxOrderQty,
-        deliverySummary,
+        maxOrderQty: UNLIMITED_ORDER_QTY,
       });
     } catch {
       priced.push({
         ...line,
         cartIndex,
-        colors: [],
+        variants: [],
         sizes: [],
+        units: [line.unit],
+        cleaning: false,
         unitKobo: 0,
         lineKobo: 0,
-        maxOrderQty: orderQtyLimitForTiers([]),
+        maxOrderQty: UNLIMITED_ORDER_QTY,
       });
     }
   }
@@ -202,16 +208,19 @@ export default function CartPage() {
 
   const total = lines.reduce((s, l) => s + l.lineKobo, 0);
 
-  const withCartUpdate = useCallback(async (fn: () => void | Promise<void>) => {
-    setUpdating(true);
-    try {
-      await fn();
-      dispatchCartUpdated();
-      await refreshLines();
-    } finally {
-      setUpdating(false);
-    }
-  }, [refreshLines]);
+  const withCartUpdate = useCallback(
+    async (fn: () => void | Promise<void>) => {
+      setUpdating(true);
+      try {
+        await fn();
+        dispatchCartUpdated();
+        await refreshLines();
+      } finally {
+        setUpdating(false);
+      }
+    },
+    [refreshLines],
+  );
 
   const changeQty = useCallback(
     async (cartIndex: number, qty: number) => {
@@ -222,7 +231,7 @@ export default function CartPage() {
     [withCartUpdate],
   );
 
-  async function changeColor(cartIndex: number, color: string) {
+  async function changeVariant(cartIndex: number, variant: string) {
     await withCartUpdate(async () => {
       const cart = readCart();
       const line = cart[cartIndex];
@@ -230,17 +239,60 @@ export default function CartPage() {
       let imageUrl: string | undefined;
       try {
         const p = await getProduct(line.productId);
-        imageUrl = imageUrlForColor(p, color);
+        imageUrl = imageUrlForVariant(p, variant);
       } catch {
         // keep previous image
       }
-      updateCartLineColor(cartIndex, color, imageUrl);
+      updateCartLineVariant(cartIndex, variant, imageUrl);
     });
   }
 
   async function changeSize(cartIndex: number, newSize: string) {
-    await withCartUpdate(() => {
+    await withCartUpdate(async () => {
+      const cart = readCart();
+      const line = cart[cartIndex];
+      if (!line) return;
+      let piecesPerBundle: number | undefined;
+      if (line.unit === "bundle") {
+        try {
+          const p = await getProduct(line.productId);
+          piecesPerBundle = sizePricingFor(p, newSize)?.piecesPerBundle;
+        } catch {
+          // ignore
+        }
+      }
       updateCartLineSize(cartIndex, newSize);
+      if (line.unit === "bundle") {
+        const after = readCart();
+        const idx = after.findIndex(
+          (l) =>
+            l.productId === line.productId &&
+            l.variant === line.variant &&
+            l.size === newSize &&
+            l.unit === "bundle",
+        );
+        if (idx >= 0) {
+          updateCartLineUnit(idx, "bundle", piecesPerBundle);
+        }
+      }
+    });
+  }
+
+  async function changeUnit(cartIndex: number, newUnit: OrderUnit) {
+    await withCartUpdate(async () => {
+      const cart = readCart();
+      const line = cart[cartIndex];
+      if (!line) return;
+      let piecesPerBundle: number | undefined;
+      if (newUnit === "bundle" && line.size) {
+        try {
+          const p = await getProduct(line.productId);
+          piecesPerBundle = sizePricingFor(p, line.size)?.piecesPerBundle;
+        } catch {
+          // ignore
+        }
+      }
+      updateCartLineUnit(cartIndex, newUnit, piecesPerBundle);
     });
   }
 
@@ -263,7 +315,9 @@ export default function CartPage() {
       <StoreHeader active="cart" />
       <Content
         className={`mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6${
-          desktopSplitScroll ? " lg:flex lg:min-h-0 lg:flex-col lg:overflow-hidden lg:py-6" : ""
+          desktopSplitScroll
+            ? " lg:flex lg:min-h-0 lg:flex-col lg:overflow-hidden lg:py-6"
+            : ""
         }`}
       >
         <div className="shrink-0">
@@ -291,12 +345,18 @@ export default function CartPage() {
             >
               {lines.map((line) => (
                 <li
-                  key={`${line.productId}-${line.size}-${line.color}-${line.cartIndex}`}
+                  key={`${line.productId}-${line.variant}-${line.size ?? ""}-${line.unit}-${line.cartIndex}`}
                   className="flex gap-4 p-4"
                 >
                   <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-hek-bg">
                     {line.imageUrl ? (
-                      <Image src={line.imageUrl} alt="" fill className="object-cover" sizes="96px" />
+                      <Image
+                        src={line.imageUrl}
+                        alt=""
+                        fill
+                        className="object-cover"
+                        sizes="96px"
+                      />
                     ) : null}
                   </div>
                   <div className="min-w-0 flex-1">
@@ -311,28 +371,45 @@ export default function CartPage() {
                         onClick={() => void removeLine(line.cartIndex)}
                       />
                     </div>
-                    <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                    <div
+                      className={`mt-3 grid gap-3 ${line.cleaning ? "sm:grid-cols-3" : "sm:grid-cols-2 lg:grid-cols-4"}`}
+                    >
                       <div>
-                        <span className="mb-1 block text-xs text-hek-muted">Size</span>
+                        <span className="mb-1 block text-xs text-hek-muted">Variant</span>
                         <Select
                           className="w-full"
-                          value={line.size}
-                          disabled={updating || line.sizes.length === 0}
-                          onChange={(s) => void changeSize(line.cartIndex, s)}
-                          options={line.sizes.map((s) => ({
-                            value: s,
-                            label: sizeDisplayLabel(s),
-                          }))}
+                          value={line.variant}
+                          disabled={updating || line.variants.length === 0}
+                          onChange={(v) => void changeVariant(line.cartIndex, v)}
+                          options={line.variants.map((v) => ({ value: v, label: v }))}
                         />
                       </div>
+                      {!line.cleaning ? (
+                        <div>
+                          <span className="mb-1 block text-xs text-hek-muted">Size</span>
+                          <Select
+                            className="w-full"
+                            value={line.size}
+                            disabled={updating || line.sizes.length === 0}
+                            onChange={(s) => void changeSize(line.cartIndex, s)}
+                            options={line.sizes.map((s) => ({ value: s, label: s }))}
+                          />
+                        </div>
+                      ) : null}
                       <div>
-                        <span className="mb-1 block text-xs text-hek-muted">Color</span>
+                        <span className="mb-1 block text-xs text-hek-muted">Buy as</span>
                         <Select
                           className="w-full"
-                          value={line.color}
+                          value={line.unit}
                           disabled={updating}
-                          onChange={(c) => void changeColor(line.cartIndex, c)}
-                          options={line.colors.map((c) => ({ value: c, label: c }))}
+                          onChange={(u) => void changeUnit(line.cartIndex, u)}
+                          options={line.units.map((u) => ({
+                            value: u,
+                            label: unitDisplayLabel(
+                              u,
+                              u === "dozen" ? DOZEN_PIECE_COUNT : line.piecesPerBundle,
+                            ),
+                          }))}
                         />
                       </div>
                       <div>
@@ -349,12 +426,13 @@ export default function CartPage() {
                     <p className="mt-3 font-semibold text-hek-primary">
                       {formatKobo(line.lineKobo)}
                       <span className="ml-2 text-sm font-normal text-hek-muted">
-                        ({formatKobo(line.unitKobo)} / unit)
+                        ({formatKobo(line.unitKobo)} /{" "}
+                        {unitDisplayLabel(line.unit, line.piecesPerBundle)})
                       </span>
                     </p>
-                    {line.deliverySummary ? (
-                      <p className="mt-2 text-xs leading-relaxed text-hek-muted">{line.deliverySummary}</p>
-                    ) : null}
+                    <p className="mt-2 text-xs leading-relaxed text-hek-muted">
+                      {FIXED_DELIVERY_COPY}
+                    </p>
                   </div>
                 </li>
               ))}

@@ -7,45 +7,38 @@ import { Button, message, Tag } from "antd";
 
 import { dispatchCartUpdated } from "@/components/store-header";
 import { addToCart } from "@/lib/cart";
-import { categoryLabel, sizeDisplayLabel } from "@/lib/constants";
-import { formatDeliveryDaysShort } from "@/lib/delivery-display";
+import { categoryLabel, isCleaningCategory } from "@/lib/constants";
+import { formatDeliveryShort } from "@/lib/delivery-display";
 import { formatKobo } from "@/lib/format";
 import {
-  catalogueUnitPriceKobo,
-  defaultColor,
+  canQuickAdd,
+  cataloguePiecePriceKobo,
+  defaultSize,
+  defaultVariant,
   productMainImage,
-  smallestSizeVariant,
 } from "@/lib/product-helpers";
-import { tierForQty } from "@/lib/pricing";
 import type { Product } from "@/lib/types";
 
 export function ProductCard({ product }: { product: Product }) {
-  const sv = smallestSizeVariant(product);
-  const unitKobo = catalogueUnitPriceKobo(product);
-  const color = defaultColor(product);
+  const unitKobo = cataloguePiecePriceKobo(product);
+  const variant = defaultVariant(product);
   const image = productMainImage(product);
-  let deliveryHint: string | null = null;
-  if (sv) {
-    try {
-      const days = tierForQty(sv.tiers, 1).deliveryDays;
-      if (days >= 1) deliveryHint = formatDeliveryDaysShort(days);
-    } catch {
-      deliveryHint = null;
-    }
-  }
+  const size = defaultSize(product);
+  const cleaning = isCleaningCategory(product.category);
 
   function handleQuickAdd(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    if (!sv || !color) {
+    if (!canQuickAdd(product) || !variant) {
       message.error("This product is not available to add yet");
       return;
     }
     addToCart({
       productId: product.id,
       title: product.title,
-      size: sv.code,
-      color,
+      variant,
+      size: cleaning ? undefined : size,
+      unit: "piece",
       quantity: 1,
       imageUrl: image,
     });
@@ -72,23 +65,27 @@ export function ProductCard({ product }: { product: Product }) {
         <Tag className="w-fit border-hek-accent/40 bg-hek-accent/10 text-hek-primary">
           {categoryLabel(product.category)}
         </Tag>
-        <Link href={`/store/${product.id}`} className="font-serif text-lg leading-snug text-hek-ink hover:text-hek-primary">
+        <Link
+          href={`/store/${product.id}`}
+          className="font-serif text-lg leading-snug text-hek-ink hover:text-hek-primary"
+        >
           {product.title}
         </Link>
         <p className="line-clamp-2 text-sm text-hek-muted">{product.description}</p>
         <div className="mt-auto flex items-end justify-between gap-2 pt-2">
           <div>
             {unitKobo != null ? (
-              <p className="text-base font-semibold text-hek-primary">{formatKobo(unitKobo)}</p>
+              <p className="text-base font-semibold text-hek-primary">
+                from {formatKobo(unitKobo)}
+              </p>
             ) : (
               <p className="text-sm text-hek-muted">See details for price</p>
             )}
-            {sv ? (
-              <p className="text-xs text-hek-muted">
-                {sizeDisplayLabel(sv.code)} · qty 1
-                {deliveryHint ? ` · ~${deliveryHint}` : null}
-              </p>
-            ) : null}
+            <p className="text-xs text-hek-muted">
+              {cleaning ? "Piece" : size ? `${size} · piece` : "Piece"}
+              {" · "}
+              {formatDeliveryShort()}
+            </p>
           </div>
           <Button
             type="primary"

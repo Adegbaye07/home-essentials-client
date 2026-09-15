@@ -1,47 +1,78 @@
-import type { QtyTier } from "./types";
+import { isCleaningCategory, UNLIMITED_ORDER_QTY } from "./constants";
+import type { OrderUnit, Product, SizePricing } from "./types";
 
-export const UNLIMITED_ORDER_QTY = 999;
+export { UNLIMITED_ORDER_QTY };
 
-export function tierForQty(tiers: QtyTier[], qty: number): QtyTier {
-  if (qty < 1) throw new Error("Invalid quantity");
-  for (const t of tiers) {
-    if (qty < t.minQty) continue;
-    if (t.maxQty != null && qty > t.maxQty) continue;
-    return t;
+export type ResolvedLinePrice = {
+  unitPriceKobo: number;
+  piecesPerBundle?: number;
+};
+
+/** Mirrors backend ResolveLinePrice for client-side cart totals. */
+export function resolveLinePrice(
+  product: Product,
+  size: string | undefined,
+  unit: OrderUnit,
+): ResolvedLinePrice {
+  if (isCleaningCategory(product.category)) {
+    if (size?.trim()) {
+      throw new Error("Size is not allowed for cleaning essentials");
+    }
+    const pricing = product.cleaningPricing;
+    if (!pricing) {
+      throw new Error("Product has no cleaning pricing");
+    }
+    if (unit === "piece") {
+      return { unitPriceKobo: pricing.piecePriceKobo };
+    }
+    if (unit === "dozen") {
+      return { unitPriceKobo: pricing.dozenPriceKobo };
+    }
+    throw new Error("Bundle is not available for cleaning essentials");
   }
-  throw new Error("No price tier for quantity");
-}
 
-export function unitPriceKobo(tiers: QtyTier[], qty: number): number {
-  return tierForQty(tiers, qty).unitPriceKobo;
-}
-
-export function lineTotalKobo(tiers: QtyTier[], qty: number): number {
-  return unitPriceKobo(tiers, qty) * qty;
-}
-
-function sortedTiers(tiers: QtyTier[]): QtyTier[] {
-  return [...tiers].sort((a, b) => a.minQty - b.minQty);
-}
-
-/** Returns the hard cap when the last tier has maxQty; otherwise undefined (unlimited). */
-export function maxOrderQtyForTiers(tiers: QtyTier[]): number | undefined {
-  if (tiers.length === 0) {
-    return undefined;
+  if (unit === "dozen") {
+    throw new Error("Dozen is only available for cleaning essentials");
   }
-  const last = sortedTiers(tiers)[tiers.length - 1]!;
-  if (last.maxQty != null && last.maxQty >= last.minQty) {
-    return last.maxQty;
+
+  const trimmed = (size ?? "").trim();
+  if (!trimmed) {
+    throw new Error("Size is required");
   }
-  return undefined;
+
+  const sp = sizePricingFor(product, trimmed);
+  if (!sp) {
+    throw new Error(`Size "${trimmed}" is not available`);
+  }
+
+  if (unit === "piece") {
+    return { unitPriceKobo: sp.piecePriceKobo };
+  }
+  if (unit === "bundle") {
+    return {
+      unitPriceKobo: sp.bundlePriceKobo,
+      piecesPerBundle: sp.piecesPerBundle,
+    };
+  }
+  throw new Error(`Invalid unit "${unit}"`);
 }
 
-/** Input max for quantity controls: tier cap or the storefront fallback limit. */
-export function orderQtyLimitForTiers(tiers: QtyTier[]): number {
-  return maxOrderQtyForTiers(tiers) ?? UNLIMITED_ORDER_QTY;
+export function sizePricingFor(product: Product, size: string): SizePricing | undefined {
+  const key = size.trim().toLowerCase();
+  return (product.sizePricings ?? []).find((sp) => sp.size.trim().toLowerCase() === key);
 }
 
-export function clampOrderQty(qty: number, tiers: QtyTier[]): number {
-  const max = orderQtyLimitForTiers(tiers);
+export function lineTotalKobo(unitPriceKobo: number, quantity: number): number {
+  return unitPriceKobo * quantity;
+}
+
+export function clampOrderQty(qty: number, max: number = UNLIMITED_ORDER_QTY): number {
   return Math.min(max, Math.max(1, Math.floor(qty)));
+}
+
+export function availableUnits(product: Product): OrderUnit[] {
+  if (isCleaningCategory(product.category)) {
+    return ["piece", "dozen"];
+  }
+  return ["piece", "bundle"];
 }

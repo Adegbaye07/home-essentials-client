@@ -1,95 +1,49 @@
-/** All categories for labels and lookups (order does not matter). */
+/** Store categories for Home Essentials by Kamgol. */
 const CATEGORY_BY_VALUE = {
-  cross_body: "Cross body bags",
-  hobo: "Hobo bags",
-  duffel: "Duffel bags",
-  male_toilet: "Male toilet bags",
-  school: "School bags",
-  travel: "Traveling bags",
-  laptop: "Laptop bags",
-  purse: "Purse",
-  clutch: "Clutch bags",
-  tote: "Tote bags",
-  shoulder: "Shoulder bags",
-  shopping: "Shopping bags",
-  rope: "Rope bags",
-  satchel: "Satchels bags",
-  jute: "Jute bags",
-  lunch_box: "Lunch boxes",
-  waist_purse: "Waist purses",
-  folder: "Folder bags",
-  pencil_case: "Pencil cases",
-  hand_bag: "Hand bags",
-  flap_bag: "Flap bags",
+  foot_mats: "Foot mats",
+  door_mats: "Door mats",
+  center_mats: "Center mats",
+  rugs: "Rugs",
+  cleaning_essentials: "Cleaning essentials",
 } as const;
 
 export type CategoryValue = keyof typeof CATEGORY_BY_VALUE;
 
-/** Store shop tabs: popular bag types first, niche categories last. */
 export const STORE_TAB_CATEGORIES: { value: CategoryValue; label: string }[] = [
-  { value: "hand_bag", label: CATEGORY_BY_VALUE.hand_bag },
-  { value: "tote", label: CATEGORY_BY_VALUE.tote },
-  { value: "shoulder", label: CATEGORY_BY_VALUE.shoulder },
-  { value: "cross_body", label: CATEGORY_BY_VALUE.cross_body },
-  { value: "flap_bag", label: CATEGORY_BY_VALUE.flap_bag },
-  { value: "satchel", label: CATEGORY_BY_VALUE.satchel },
-  { value: "clutch", label: CATEGORY_BY_VALUE.clutch },
-  { value: "hobo", label: CATEGORY_BY_VALUE.hobo },
-  { value: "purse", label: CATEGORY_BY_VALUE.purse },
-  { value: "shopping", label: CATEGORY_BY_VALUE.shopping },
-  { value: "travel", label: CATEGORY_BY_VALUE.travel },
-  { value: "school", label: CATEGORY_BY_VALUE.school },
-  { value: "laptop", label: CATEGORY_BY_VALUE.laptop },
-  { value: "duffel", label: CATEGORY_BY_VALUE.duffel },
-  { value: "male_toilet", label: CATEGORY_BY_VALUE.male_toilet },
-  { value: "rope", label: CATEGORY_BY_VALUE.rope },
-  { value: "jute", label: CATEGORY_BY_VALUE.jute },
-  { value: "waist_purse", label: CATEGORY_BY_VALUE.waist_purse },
-  { value: "lunch_box", label: CATEGORY_BY_VALUE.lunch_box },
-  { value: "folder", label: CATEGORY_BY_VALUE.folder },
-  { value: "pencil_case", label: CATEGORY_BY_VALUE.pencil_case },
+  { value: "foot_mats", label: CATEGORY_BY_VALUE.foot_mats },
+  { value: "door_mats", label: CATEGORY_BY_VALUE.door_mats },
+  { value: "center_mats", label: CATEGORY_BY_VALUE.center_mats },
+  { value: "rugs", label: CATEGORY_BY_VALUE.rugs },
+  { value: "cleaning_essentials", label: CATEGORY_BY_VALUE.cleaning_essentials },
 ];
 
-/** @deprecated Use STORE_TAB_CATEGORIES on the store page; kept for any code that iterates all categories. */
 export const CATEGORIES = STORE_TAB_CATEGORIES;
 
-const LEGACY_CATEGORY_LABELS: Record<string, string> = {
-  mens: "Men's",
-};
+export const CLEANING_CATEGORY: CategoryValue = "cleaning_essentials";
+
+export function isCleaningCategory(category: string | undefined): boolean {
+  return category === CLEANING_CATEGORY;
+}
 
 export function categoryLabel(value: string): string {
   if (value in CATEGORY_BY_VALUE) {
     return CATEGORY_BY_VALUE[value as CategoryValue];
   }
-  return LEGACY_CATEGORY_LABELS[value] ?? value;
+  return value;
 }
 
-export const SIZES = ["S", "M", "L", "XL", "XXL"] as const;
+/** Fixed delivery copy (not a product field). */
+export const DELIVERY_COPY = "1–3 business days (Mon–Sat)";
 
-export type SizeCode = (typeof SIZES)[number];
+export const CART_STORAGE_KEY = "home_essentials_cart_v2";
 
-const SIZE_LABELS: Record<SizeCode, string> = {
-  S: "Small",
-  M: "Medium",
-  L: "Large",
-  XL: "Extra large",
-  XXL: "Extra extra large",
-};
+export const UNLIMITED_ORDER_QTY = 999;
 
-/** User-facing size name (cart/API still use the code). */
-export function sizeDisplayLabel(code: string): string {
-  if (code in SIZE_LABELS) return SIZE_LABELS[code as SizeCode];
-  return code;
-}
+export const DOZEN_PIECE_COUNT = 12;
 
-export const CART_STORAGE_KEY = "home_essentials_cart_v1";
-
-/** All order statuses (matches admin). */
 export const ORDER_STATUSES = [
-  { value: "created", label: "Created" },
   { value: "pending_payment", label: "Pending payment" },
   { value: "abandoned", label: "Abandoned" },
-  { value: "rejected", label: "Rejected" },
   { value: "paid", label: "Paid" },
   { value: "packing", label: "Packing" },
   { value: "in_transit", label: "In transit" },
@@ -98,12 +52,12 @@ export const ORDER_STATUSES = [
 
 export type OrderStatus = (typeof ORDER_STATUSES)[number]["value"];
 
-export type OrderType = "shop" | "custom";
-
 const LEGACY_STATUS_LABELS: Record<string, string> = {
   processing: "Packing",
   shipped: "In transit",
   cancelled: "Cancelled",
+  created: "Created",
+  rejected: "Rejected",
 };
 
 export function normalizeOrderStatus(status: OrderStatus | string): OrderStatus | string {
@@ -122,14 +76,10 @@ export function orderStatusLabel(status: OrderStatus | string): string {
 export function orderStatusColor(status: OrderStatus | string): string {
   const s = normalizeOrderStatus(status);
   switch (s) {
-    case "created":
-      return "orange";
     case "pending_payment":
       return "gold";
     case "abandoned":
       return "default";
-    case "rejected":
-      return "red";
     case "paid":
       return "blue";
     case "packing":
@@ -138,7 +88,20 @@ export function orderStatusColor(status: OrderStatus | string): string {
       return "purple";
     case "delivered":
       return "green";
+    case "created":
+      return "orange";
+    case "rejected":
+      return "red";
     default:
       return "default";
   }
+}
+
+export function unitDisplayLabel(unit: string, piecesPerBundle?: number): string {
+  if (unit === "bundle" && piecesPerBundle && piecesPerBundle > 0) {
+    return `Bundle of ${piecesPerBundle}`;
+  }
+  if (unit === "dozen") return `Dozen (${DOZEN_PIECE_COUNT})`;
+  if (unit === "piece") return "Piece";
+  return unit;
 }

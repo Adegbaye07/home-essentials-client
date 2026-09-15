@@ -38,7 +38,13 @@ export async function getProduct(id: string): Promise<Product> {
 }
 
 export async function createOrder(body: {
-  items: { productId: string; size: string; color: string; quantity: number }[];
+  items: {
+    productId: string;
+    variant: string;
+    size?: string;
+    unit: string;
+    quantity: number;
+  }[];
   customer: { name: string; email: string; phone: string; deliveryAddress: string };
 }): Promise<CreatedOrder> {
   const res = await fetch(`${baseURL()}/api/v1/orders`, {

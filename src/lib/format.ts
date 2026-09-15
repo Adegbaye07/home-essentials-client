@@ -14,15 +14,3 @@ export function formatDateTime(iso: string): string {
     timeStyle: "short",
   }).format(new Date(iso));
 }
-
-/** Display label for a qty tier row (e.g. "1", "2-5", "11+"). */
-export function formatQtyTierRange(tier: { minQty: number; maxQty?: number | null }): string {
-  const { minQty, maxQty } = tier;
-  if (maxQty != null && maxQty === minQty) {
-    return String(minQty);
-  }
-  if (maxQty != null) {
-    return `${minQty}-${maxQty}`;
-  }
-  return `${minQty}+`;
-}
