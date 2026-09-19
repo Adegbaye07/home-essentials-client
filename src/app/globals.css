@@ -70,3 +70,18 @@ header[data-store-header] a.store-header-interactive {
 header[data-store-header] a.store-header-interactive:hover {
   background-color: var(--store-header-hover-bg) !important;
 }
+
+@keyframes store-hero-enter {
+  from {
+    opacity: 0;
+    transform: translateY(1.25rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.store-hero-enter {
+  animation: store-hero-enter 0.55s ease-out both;
+}

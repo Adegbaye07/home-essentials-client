@@ -72,16 +72,47 @@ export default function StorePage() {
 
   return (
     <Layout className="min-h-screen bg-hek-bg">
-      <StoreHeader active="store" overlay />
-      <Content className="mx-auto w-full max-w-6xl flex-1 px-4 pb-8 pt-4 sm:px-6">
-        <header className="mb-8 pt-14 sm:pt-16">
-          <h1 className="text-hek-primary">
-            <BrandMark size="lg" header="Store" showIcon={false} />
-          </h1>
-          {/* <p className="mt-3 max-w-2xl text-hek-muted md:text-lg">
-            Foot mats, door mats, center mats, rugs, and other home essentials.
-          </p> */}
-        </header>
+      <StoreHeader active="store" overlay overlayLight />
+
+      <section className="relative min-h-[70vh] overflow-hidden bg-hek-primary text-white">
+        <div
+          className="pointer-events-none absolute inset-0 opacity-50"
+          style={{
+            backgroundImage:
+              "radial-gradient(ellipse 80% 60% at 70% 40%, rgba(255,255,255,0.22), transparent 55%), linear-gradient(160deg, #AE7820 0%, #8f6219 55%, #6e4b14 100%)",
+          }}
+        />
+        <div className="relative mx-auto flex min-h-[70vh] w-full max-w-6xl flex-col justify-end px-4 pb-16 pt-24 sm:px-6 sm:pb-20">
+          <div className="store-hero-enter">
+            <BrandMark size="lg" className="text-white" header="Store" />
+            <p className="mt-6 max-w-md text-base text-white/85 sm:text-lg">
+              Foot mats, door mats, center mats, rugs, and cleaning essentials —
+              delivered in 1–3 business days.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <a href="#catalogue">
+                <Button
+                  type="default"
+                  size="large"
+                  className="border-white! bg-white! text-hek-primary!"
+                >
+                  Browse products
+                </Button>
+              </a>
+              <Link href="/track">
+                <Button ghost size="large" className="border-white/50! text-white!">
+                  Track order
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <Content
+        id="catalogue"
+        className="mx-auto w-full max-w-6xl flex-1 scroll-mt-20 px-4 py-10 sm:px-6 sm:py-12"
+      >
         <Tabs
           activeKey={category}
           onChange={setCategory}

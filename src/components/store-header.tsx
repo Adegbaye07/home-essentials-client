@@ -16,9 +16,14 @@ type Props = {
   active?: "store" | "cart" | "track" | "contact";
   /** When true, header starts transparent and content can scroll beneath it until the user scrolls. */
   overlay?: boolean;
+  /**
+   * When overlaying a saturated hero (e.g. gold), use light (white) nav text
+   * before scroll so links stay readable.
+   */
+  overlayLight?: boolean;
 };
 
-export function StoreHeader({ active, overlay = false }: Props) {
+export function StoreHeader({ active, overlay = false, overlayLight = false }: Props) {
   const [lineCount, setLineCount] = useState(0);
   const [scrolled, setScrolled] = useState(!overlay);
 
@@ -50,8 +55,12 @@ export function StoreHeader({ active, overlay = false }: Props) {
 
   const solid = !overlay || scrolled;
 
-  const headerFg = solid ? "#ffffff" : brand.primary;
-  const headerHoverBg = solid ? "rgba(255, 255, 255, 0.1)" : "rgba(174, 120, 32, 0.12)";
+  const headerFg = solid ? "#ffffff" : overlayLight ? "#ffffff" : brand.primary;
+  const headerHoverBg = solid
+    ? "rgba(255, 255, 255, 0.1)"
+    : overlayLight
+      ? "rgba(255, 255, 255, 0.12)"
+      : "rgba(174, 120, 32, 0.12)";
 
   const headerStyle = {
     ["--store-header-fg" as string]: headerFg,
@@ -63,7 +72,7 @@ export function StoreHeader({ active, overlay = false }: Props) {
     const isActive = key === active;
     const base =
       "store-header-interactive store-header-link inline-flex items-center rounded-full px-3 py-1.5 no-underline";
-    if (solid) {
+    if (solid || overlayLight) {
       return `${base}${isActive ? " bg-white/15" : ""}`;
     }
     return `${base}${isActive ? " bg-hek-primary/10" : ""}`;
@@ -72,7 +81,7 @@ export function StoreHeader({ active, overlay = false }: Props) {
   const logoClass =
     "store-header-logo no-underline transition-colors duration-300";
 
-  const cartIconColor = solid ? "#ffffff" : brand.primary;
+  const cartIconColor = solid || overlayLight ? "#ffffff" : brand.primary;
 
   return (
     <>
@@ -102,7 +111,7 @@ export function StoreHeader({ active, overlay = false }: Props) {
               aria-label="Cart"
               className={`store-header-interactive relative ml-1 flex h-10 w-10 items-center justify-center rounded-full no-underline sm:ml-2 ${
                 active === "cart"
-                  ? solid
+                  ? solid || overlayLight
                     ? "bg-white/15"
                     : "bg-hek-primary/10"
                   : ""
