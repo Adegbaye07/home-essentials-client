@@ -437,7 +437,7 @@ export default function CartPage() {
                 </li>
               ))}
             </ul>
-            <div className="mt-8 shrink-0 lg:mt-0 lg:self-start">
+            <div className="mt-8 shrink-0 lg:mt-0 lg:max-h-[calc(100svh-12rem)] lg:self-start lg:overflow-y-auto lg:overscroll-y-contain">
               <CartCheckoutPanel subtotalKobo={total} disabled={updating} />
             </div>
           </div>
