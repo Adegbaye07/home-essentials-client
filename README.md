@@ -8,16 +8,9 @@ Next.js customer app — shop, cart, Paystack checkout, and order tracking.
 - API running ([home-essentials-backend](../home-essentials-backend))
 - Paystack **test** (or live) public key for checkout
 
-## Environment
+## Config
 
-Create `.env.local` (not committed):
-
-```env
-NEXT_PUBLIC_API_URL=http://localhost:8080
-NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY=pk_test_xxxxxxxx
-```
-
-Use your deployed API URL in production. Ensure API `CORS_ORIGINS` includes this storefront origin (local default port **3000**).
+API URL and Paystack public key live in [`src/lib/config.ts`](src/lib/config.ts). Swap `apiUrl` there for local backend testing. Ensure API `CORS_ORIGINS` includes this storefront origin (local default port **3000**).
 
 ## Run locally
 
@@ -50,7 +43,7 @@ Gold `#AE7820` — `src/lib/brand.ts` and `src/app/globals.css` (`hek-*` tokens)
 
 ## Deploy
 
-1. Set `NEXT_PUBLIC_API_URL` and `NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY`
+1. Confirm values in `src/lib/config.ts`
 2. Backend `CORS_ORIGINS` + `CLIENT_PUBLIC_URL` must match this site
 3. Configure Paystack webhook to the API `/api/v1/webhooks/paystack`
 

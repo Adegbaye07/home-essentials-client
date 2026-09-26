@@ -1,4 +1,5 @@
 import { initializePayment } from "@/lib/api";
+import { config } from "@/lib/config";
 
 export type OpenPaystackForOrderOptions = {
   orderId: string;
@@ -16,17 +17,12 @@ export async function openPaystackForOrder(
 ): Promise<{ reference: string }> {
   const { orderId, email, onSuccess, onCancel } = options;
 
-  const publicKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY;
-  if (!publicKey) {
-    throw new Error("NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY is not set");
-  }
-
   const { accessCode, reference } = await initializePayment(orderId);
 
   const PaystackInline = (await import("@paystack/inline-js")).default;
   const popup = new PaystackInline();
   popup.newTransaction({
-    key: publicKey,
+    key: config.paystackPublicKey,
     email,
     accessCode,
     onSuccess: () => onSuccess(reference),
