@@ -70,6 +70,8 @@ export type TrackResult = {
   trackingNumber: string;
   status: string;
   statusHistory: { status: string; at: string; note?: string }[];
+  subtotalAmountKobo?: number;
+  deliveryFeeKobo?: number;
   totalAmountKobo: number;
   items?: {
     productTitle: string;

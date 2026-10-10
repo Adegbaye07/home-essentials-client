@@ -6,15 +6,23 @@ import { Button, Form, Input, message } from "antd";
 
 import { dispatchCartUpdated } from "@/components/store-header";
 import { OrderSummaryLines } from "@/components/order-summary-lines";
-import { FIXED_DELIVERY_COPY } from "@/lib/delivery-display";
+import {
+  DELIVERY_FEE_RULE_COPY,
+  FIXED_DELIVERY_COPY,
+} from "@/lib/delivery-display";
 import { submitCartCheckout } from "@/lib/checkout-flow";
 
 type CartCheckoutPanelProps = {
   subtotalKobo: number;
+  deliveryFeeKobo: number;
   disabled?: boolean;
 };
 
-export function CartCheckoutPanel({ subtotalKobo, disabled = false }: CartCheckoutPanelProps) {
+export function CartCheckoutPanel({
+  subtotalKobo,
+  deliveryFeeKobo,
+  disabled = false,
+}: CartCheckoutPanelProps) {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
 
@@ -42,7 +50,8 @@ export function CartCheckoutPanel({ subtotalKobo, disabled = false }: CartChecko
     }
   }
 
-  const payDisabled = disabled || submitting || subtotalKobo <= 0;
+  const totalKobo = subtotalKobo + deliveryFeeKobo;
+  const payDisabled = disabled || submitting || totalKobo <= 0;
 
   return (
     <div className="rounded-xl border border-hek-primary/15 bg-white p-5 shadow-sm">
@@ -51,9 +60,13 @@ export function CartCheckoutPanel({ subtotalKobo, disabled = false }: CartChecko
         Enter delivery details below to pay securely with Paystack.
       </p>
       <p className="mt-1 text-xs text-hek-muted">{FIXED_DELIVERY_COPY}</p>
+      <p className="mt-1 text-xs text-hek-muted">{DELIVERY_FEE_RULE_COPY}</p>
 
       <div className="mt-5">
-        <OrderSummaryLines subtotalKobo={subtotalKobo} />
+        <OrderSummaryLines
+          subtotalKobo={subtotalKobo}
+          deliveryFeeKobo={deliveryFeeKobo}
+        />
       </div>
 
       <Form

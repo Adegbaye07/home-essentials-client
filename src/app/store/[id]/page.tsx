@@ -16,11 +16,15 @@ import {
   isCleaningCategory,
   unitDisplayLabel,
 } from "@/lib/constants";
-import { FIXED_DELIVERY_COPY } from "@/lib/delivery-display";
+import {
+  DELIVERY_FEE_RULE_COPY,
+  FIXED_DELIVERY_COPY,
+} from "@/lib/delivery-display";
 import { formatKobo } from "@/lib/format";
 import {
   availableUnits,
   clampOrderQty,
+  effectivePiecePriceKobo,
   lineTotalKobo,
   resolveLinePrice,
   sizePricingFor,
@@ -101,6 +105,14 @@ export default function ProductDetailPage() {
   const lineKobo =
     priced != null ? lineTotalKobo(priced.unitPriceKobo, qty) : null;
 
+  const dozenPerPieceKobo =
+    product?.cleaningPricing != null
+      ? effectivePiecePriceKobo(
+          product.cleaningPricing.dozenPriceKobo,
+          DOZEN_PIECE_COUNT,
+        )
+      : null;
+
   function handleAddToCart() {
     if (!product || !variant || priced == null) return;
     if (!cleaning && !size) {
@@ -167,16 +179,25 @@ export default function ProductDetailPage() {
                     <section className="rounded-lg border border-hek-primary/10 bg-white p-4 text-sm">
                       <h2 className="mb-2 font-semibold text-hek-ink">Pricing</h2>
                       <ul className="space-y-2 text-hek-muted">
-                        {product.sizePricings!.map((sp) => (
-                          <li key={sp.size}>
-                            <span className="font-medium text-hek-ink">{sp.size}</span>
-                            {" — "}
-                            piece {formatKobo(sp.piecePriceKobo)}
-                            {" · "}
-                            bundle of {sp.piecesPerBundle}{" "}
-                            {formatKobo(sp.bundlePriceKobo)}
-                          </li>
-                        ))}
+                        {product.sizePricings!.map((sp) => {
+                          const perPiece = effectivePiecePriceKobo(
+                            sp.bundlePriceKobo,
+                            sp.piecesPerBundle,
+                          );
+                          return (
+                            <li key={sp.size}>
+                              <span className="font-medium text-hek-ink">{sp.size}</span>
+                              {" — "}
+                              piece {formatKobo(sp.piecePriceKobo)}
+                              {" · "}
+                              bundle of {sp.piecesPerBundle}{" "}
+                              {formatKobo(sp.bundlePriceKobo)}
+                              {perPiece != null
+                                ? ` at ${formatKobo(perPiece)} per piece`
+                                : null}
+                            </li>
+                          );
+                        })}
                       </ul>
                     </section>
                   ) : null}
@@ -189,6 +210,9 @@ export default function ProductDetailPage() {
                         {" · "}
                         Dozen ({DOZEN_PIECE_COUNT}){" "}
                         {formatKobo(product.cleaningPricing.dozenPriceKobo)}
+                        {dozenPerPieceKobo != null
+                          ? ` at ${formatKobo(dozenPerPieceKobo)} per piece`
+                          : null}
                       </p>
                     </section>
                   ) : null}
@@ -267,6 +291,7 @@ export default function ProductDetailPage() {
                   )}
 
                   <p className="text-sm text-hek-muted">{FIXED_DELIVERY_COPY}</p>
+                  <p className="text-xs text-hek-muted">{DELIVERY_FEE_RULE_COPY}</p>
 
                   <div className="flex flex-wrap gap-3">
                     <Button

@@ -3,10 +3,12 @@
 import { useState } from "react";
 import { Button, Form, Input, Layout, Tag, Timeline, message } from "antd";
 
+import { OrderSummaryLines } from "@/components/order-summary-lines";
 import { StoreHeader } from "@/components/store-header";
 import { trackOrder } from "@/lib/api";
 import { orderStatusColor, orderStatusLabel, unitDisplayLabel } from "@/lib/constants";
-import { formatDateTime, formatKobo } from "@/lib/format";
+import { formatDateTime } from "@/lib/format";
+import { resolveOrderAmounts } from "@/lib/order-amounts";
 import type { TrackResult } from "@/lib/types";
 
 const { Content } = Layout;
@@ -50,6 +52,8 @@ export default function TrackPage() {
     }
   }
 
+  const amounts = result ? resolveOrderAmounts(result) : null;
+
   return (
     <Layout className="min-h-screen bg-hek-bg">
       <StoreHeader active="track" />
@@ -75,7 +79,6 @@ export default function TrackPage() {
               {orderStatusLabel(result.status)}
             </Tag>
             <p className="mt-2 font-medium text-hek-ink">{result.trackingNumber}</p>
-            <p className="mt-1 text-sm text-hek-muted">Total {formatKobo(result.totalAmountKobo)}</p>
             {result.items && result.items.length > 0 ? (
               <ul className="mt-4 space-y-2 border-t border-hek-primary/10 pt-4 text-sm">
                 {result.items.map((item, i) => (
@@ -89,6 +92,14 @@ export default function TrackPage() {
                   </li>
                 ))}
               </ul>
+            ) : null}
+            {amounts ? (
+              <div className="mt-4 border-t border-hek-primary/10 pt-4">
+                <OrderSummaryLines
+                  subtotalKobo={amounts.subtotalKobo}
+                  deliveryFeeKobo={amounts.deliveryFeeKobo}
+                />
+              </div>
             ) : null}
             <div className="mt-6">
               <OrderTimeline history={result.statusHistory} />

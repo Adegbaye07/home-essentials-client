@@ -23,7 +23,11 @@ import {
   isCleaningCategory,
   unitDisplayLabel,
 } from "@/lib/constants";
-import { FIXED_DELIVERY_COPY } from "@/lib/delivery-display";
+import {
+  DELIVERY_FEE_RULE_COPY,
+  FIXED_DELIVERY_COPY,
+} from "@/lib/delivery-display";
+import { deliveryFeeKoboFromUnits } from "@/lib/delivery-fee";
 import { formatKobo } from "@/lib/format";
 import {
   availableUnits,
@@ -206,7 +210,8 @@ export default function CartPage() {
     })();
   }, [refreshLines]);
 
-  const total = lines.reduce((s, l) => s + l.lineKobo, 0);
+  const subtotalKobo = lines.reduce((s, l) => s + l.lineKobo, 0);
+  const deliveryFeeKobo = deliveryFeeKoboFromUnits(lines.map((l) => l.unit));
 
   const withCartUpdate = useCallback(
     async (fn: () => void | Promise<void>) => {
@@ -431,14 +436,18 @@ export default function CartPage() {
                       </span>
                     </p>
                     <p className="mt-2 text-xs leading-relaxed text-hek-muted">
-                      {FIXED_DELIVERY_COPY}
+                      {FIXED_DELIVERY_COPY}. {DELIVERY_FEE_RULE_COPY}
                     </p>
                   </div>
                 </li>
               ))}
             </ul>
             <div className="mt-8 shrink-0 lg:mt-0 lg:max-h-[calc(100svh-12rem)] lg:self-start lg:overflow-y-auto lg:overscroll-y-contain">
-              <CartCheckoutPanel subtotalKobo={total} disabled={updating} />
+              <CartCheckoutPanel
+                subtotalKobo={subtotalKobo}
+                deliveryFeeKobo={deliveryFeeKobo}
+                disabled={updating}
+              />
             </div>
           </div>
         )}
