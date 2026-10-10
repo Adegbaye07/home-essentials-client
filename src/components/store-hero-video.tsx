@@ -5,8 +5,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 /** Append public video URLs here to extend the hero queue. */
 export const HERO_VIDEOS = [
   "https://eswnyjnxqymxyzwbcxwu.supabase.co/storage/v1/object/public/kamgol/hero-videos/hero-web.mp4",
-  "https://eswnyjnxqymxyzwbcxwu.supabase.co/storage/v1/object/public/kamgol/hero-videos/hero-web-2.MP4",
-  "https://eswnyjnxqymxyzwbcxwu.supabase.co/storage/v1/object/public/kamgol/hero-videos/hero-web-3.MP4",
+  "https://eswnyjnxqymxyzwbcxwu.supabase.co/storage/v1/object/public/kamgol/hero-videos/hero-2-web.MP4",
+  "https://eswnyjnxqymxyzwbcxwu.supabase.co/storage/v1/object/public/kamgol/hero-videos/hero-3-web.MP4",
 ] as const;
 
 export function StoreHeroVideo() {
