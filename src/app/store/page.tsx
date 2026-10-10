@@ -7,6 +7,7 @@ import { Button, Layout, Spin, Tabs } from "antd";
 import { ProductCard } from "@/components/product-card";
 import { StoreHeader } from "@/components/store-header";
 import { BrandMark } from "@/components/brand-mark";
+import { StoreHeroVideo } from "@/components/store-hero-video";
 import { STORE_TAB_CATEGORIES } from "@/lib/constants";
 import { listProducts } from "@/lib/api";
 import type { Product } from "@/lib/types";
@@ -74,13 +75,16 @@ export default function StorePage() {
     <Layout className="min-h-screen bg-hek-bg">
       <StoreHeader active="store" overlay overlayLight />
 
-      <section className="relative min-h-[70vh] overflow-hidden bg-hek-primary text-white">
+      <section className="relative min-h-[70vh] overflow-hidden bg-hek-ink text-white">
+        <StoreHeroVideo />
+        {/* Neutral shadow overlay — keep text readable without a gold wash */}
         <div
-          className="pointer-events-none absolute inset-0 opacity-50"
-          style={{
-            backgroundImage:
-              "radial-gradient(ellipse 80% 60% at 70% 40%, rgba(255,255,255,0.22), transparent 55%), linear-gradient(160deg, #AE7820 0%, #8f6219 55%, #6e4b14 100%)",
-          }}
+          className="pointer-events-none absolute inset-0 bg-black/45"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/55 via-black/20 to-black/25"
+          aria-hidden
         />
         <div className="relative mx-auto flex min-h-[70vh] w-full max-w-6xl flex-col justify-end px-4 pb-16 pt-24 sm:px-6 sm:pb-20">
           <div className="store-hero-enter">
