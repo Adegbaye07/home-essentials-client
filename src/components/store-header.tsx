@@ -94,7 +94,7 @@ export function StoreHeader({ active, overlay = false, overlayLight = false }: P
       >
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
           <Link href="/store" className={logoClass}>
-            <BrandMark size="md" />
+            <BrandMark size="md" showIcon={false} />
           </Link>
           <nav className="flex items-center gap-1 text-sm sm:gap-2 sm:text-base">
             <Link href="/store" className={navLinkClass("store")}>

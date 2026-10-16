@@ -88,7 +88,7 @@ export default function StorePage() {
         />
         <div className="relative mx-auto flex min-h-[70vh] w-full max-w-6xl flex-col justify-end px-4 pb-16 pt-24 sm:px-6 sm:pb-20">
           <div className="store-hero-enter">
-            <BrandMark size="lg" className="text-white" header="Store" />
+            <BrandMark size="lg" className="text-white" header="Store" showIcon={false} />
             <p className="mt-6 max-w-md text-base text-white/85 sm:text-lg">
               Foot mats, door mats, center mats, rugs, and cleaning essentials —
               delivered in 1–3 business days.
