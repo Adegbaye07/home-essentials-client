@@ -15,7 +15,7 @@ const cormorant = Cormorant_Garamond({
 export const metadata: Metadata = {
   title: "Home Essentials by Kamgol",
   description:
-    "Home Essentials by Kamgol — foot mats, door mats, center mats, bath mats, rugs, and cleaning essentials.",
+    "Home Essentials by Kamgol — general mats, foot mats, door mats, center mats, bath mats, rugs, and cleaning essentials.",
 };
 
 export default function RootLayout({

@@ -1,5 +1,5 @@
 import { config } from "./config";
-import type { CreatedOrder, Paginated, Product, TrackResult } from "./types";
+import type { CreatedCustomOrder, CreatedOrder, Paginated, Product, TrackResult } from "./types";
 
 function baseURL(): string {
   return config.apiUrl.replace(/\/$/, "");
@@ -53,6 +53,34 @@ export async function createOrder(body: {
   });
   if (!res.ok) throw new Error(await parseError(res));
   return (await res.json()) as CreatedOrder;
+}
+
+export type CreateCustomOrderInput = {
+  title: string;
+  quantity: number;
+  name: string;
+  email: string;
+  phone: string;
+  deliveryAddress: string;
+  sampleImage: File;
+};
+
+export async function createCustomOrder(input: CreateCustomOrderInput): Promise<CreatedCustomOrder> {
+  const form = new FormData();
+  form.set("title", input.title);
+  form.set("quantity", String(input.quantity));
+  form.set("name", input.name);
+  form.set("email", input.email);
+  form.set("phone", input.phone);
+  form.set("deliveryAddress", input.deliveryAddress);
+  form.set("sampleImage", input.sampleImage);
+
+  const res = await fetch(`${baseURL()}/api/v1/orders/custom`, {
+    method: "POST",
+    body: form,
+  });
+  if (!res.ok) throw new Error(await parseError(res));
+  return (await res.json()) as CreatedCustomOrder;
 }
 
 export async function initializePayment(orderId: string): Promise<{ accessCode: string; reference: string }> {

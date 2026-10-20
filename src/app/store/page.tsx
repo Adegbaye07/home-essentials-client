@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button, Layout, Spin, Tabs } from "antd";
 
+import { BespokeOrderForm } from "@/components/bespoke-order-form";
 import { ProductCard } from "@/components/product-card";
 import { StoreHeader } from "@/components/store-header";
 import { BrandMark } from "@/components/brand-mark";
@@ -15,6 +16,7 @@ import type { Product } from "@/lib/types";
 const { Content, Footer } = Layout;
 
 const STORE_PAGE_SIZE = 20;
+const CREATE_TAB = "create";
 
 export default function StorePage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -25,7 +27,19 @@ export default function StorePage() {
   const [page, setPage] = useState(1);
   const [hasNextPage, setHasNextPage] = useState(false);
 
+  const isCreate = category === CREATE_TAB;
+
   useEffect(() => {
+    if (isCreate) {
+      setLoading(false);
+      setLoadingMore(false);
+      setError(null);
+      setProducts([]);
+      setHasNextPage(false);
+      setPage(1);
+      return;
+    }
+
     async function loadFirstPage() {
       setLoading(true);
       setError(null);
@@ -47,10 +61,10 @@ export default function StorePage() {
       }
     }
     void loadFirstPage();
-  }, [category]);
+  }, [category, isCreate]);
 
   async function loadMore() {
-    if (!hasNextPage || loadingMore || loading) return;
+    if (isCreate || !hasNextPage || loadingMore || loading) return;
 
     const nextPage = page + 1;
     setLoadingMore(true);
@@ -90,7 +104,7 @@ export default function StorePage() {
           <div className="store-hero-enter">
             <BrandMark size="lg" className="text-white" header="Store" showIcon={false} />
             <p className="mt-6 max-w-md text-base text-white/85 sm:text-lg">
-              Foot mats, door mats, center mats, bath mats, rugs, and cleaning essentials —
+              General mats, foot mats, door mats, center mats, bath mats, rugs, and cleaning essentials —
               delivered in 1–3 business days.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
@@ -117,16 +131,31 @@ export default function StorePage() {
         id="catalogue"
         className="mx-auto w-full max-w-6xl flex-1 scroll-mt-20 px-4 py-10 sm:px-6 sm:py-12"
       >
+        {isCreate ? (
+          <div className="mb-8">
+            <h2 className="font-serif text-2xl text-hek-ink sm:text-3xl">
+              Create a custom mat
+            </h2>
+            <p className="mt-2 max-w-2xl text-hek-muted md:text-lg">
+              Send a sample photo. We review it, set a price that includes delivery, and email you a
+              payment link if we can make it.
+            </p>
+          </div>
+        ) : null}
+
         <Tabs
           activeKey={category}
           onChange={setCategory}
           items={[
+            { key: CREATE_TAB, label: "Create" },
             { key: "all", label: "All" },
             ...STORE_TAB_CATEGORIES.map((c) => ({ key: c.value, label: c.label })),
           ]}
           className="mb-6"
         />
-        {loading ? (
+        {isCreate ? (
+          <BespokeOrderForm />
+        ) : loading ? (
           <div className="flex justify-center py-16">
             <Spin size="large" />
           </div>

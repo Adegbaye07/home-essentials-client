@@ -1,5 +1,6 @@
 /** Store categories for Home Essentials by Kamgol. */
 const CATEGORY_BY_VALUE = {
+  general_mats: "General mats",
   foot_mats: "Foot mats",
   door_mats: "Door mats",
   center_mats: "Center mats",
@@ -11,6 +12,7 @@ const CATEGORY_BY_VALUE = {
 export type CategoryValue = keyof typeof CATEGORY_BY_VALUE;
 
 export const STORE_TAB_CATEGORIES: { value: CategoryValue; label: string }[] = [
+  { value: "general_mats", label: CATEGORY_BY_VALUE.general_mats },
   { value: "foot_mats", label: CATEGORY_BY_VALUE.foot_mats },
   { value: "door_mats", label: CATEGORY_BY_VALUE.door_mats },
   { value: "center_mats", label: CATEGORY_BY_VALUE.center_mats },

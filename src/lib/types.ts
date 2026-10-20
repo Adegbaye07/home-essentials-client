@@ -66,6 +66,24 @@ export type CreatedOrder = {
   trackingNumber?: string;
 };
 
+export type CreatedCustomOrder = {
+  id: string;
+  orderType?: "custom";
+  status: string;
+  trackingNumber?: string;
+  customer?: {
+    name?: string;
+    email: string;
+    phone?: string;
+    deliveryAddress?: string;
+  };
+  custom?: {
+    title: string;
+    quantity: number;
+    sampleImageUrl?: string;
+  };
+};
+
 export type TrackResult = {
   trackingNumber: string;
   status: string;
