@@ -7,6 +7,7 @@ const CATEGORY_BY_VALUE = {
   bath_mats: "Bath mats",
   rugs: "Rugs",
   cleaning_essentials: "Cleaning essentials",
+  bathroom_essentials: "Bathroom essentials",
 } as const;
 
 export type CategoryValue = keyof typeof CATEGORY_BY_VALUE;
@@ -19,14 +20,17 @@ export const STORE_TAB_CATEGORIES: { value: CategoryValue; label: string }[] = [
   { value: "bath_mats", label: CATEGORY_BY_VALUE.bath_mats },
   { value: "rugs", label: CATEGORY_BY_VALUE.rugs },
   { value: "cleaning_essentials", label: CATEGORY_BY_VALUE.cleaning_essentials },
+  { value: "bathroom_essentials", label: CATEGORY_BY_VALUE.bathroom_essentials },
 ];
 
 export const CATEGORIES = STORE_TAB_CATEGORIES;
 
 export const CLEANING_CATEGORY: CategoryValue = "cleaning_essentials";
+export const BATHROOM_CATEGORY: CategoryValue = "bathroom_essentials";
 
+/** Piece/dozen pricing categories (cleaning + bathroom essentials). */
 export function isCleaningCategory(category: string | undefined): boolean {
-  return category === CLEANING_CATEGORY;
+  return category === CLEANING_CATEGORY || category === BATHROOM_CATEGORY;
 }
 
 export function categoryLabel(value: string): string {

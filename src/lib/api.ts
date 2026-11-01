@@ -17,11 +17,13 @@ async function parseError(res: Response): Promise<string> {
 
 export async function listProducts(params?: {
   category?: string;
+  q?: string;
   page?: number;
   page_size?: number;
 }): Promise<Paginated<Product>> {
   const search = new URLSearchParams();
   if (params?.category) search.set("category", params.category);
+  if (params?.q) search.set("q", params.q);
   if (params?.page !== undefined) search.set("page", String(params.page));
   if (params?.page_size !== undefined) search.set("page_size", String(params.page_size));
   const qs = search.toString();

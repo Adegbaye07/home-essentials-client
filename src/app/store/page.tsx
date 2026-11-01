@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Button, Layout, Spin, Tabs } from "antd";
+import { Button, Input, Layout, Spin, Tabs } from "antd";
+import { SearchOutlined } from "@ant-design/icons";
 
 import { BespokeOrderForm } from "@/components/bespoke-order-form";
 import { ProductCard } from "@/components/product-card";
@@ -17,17 +18,35 @@ const { Content, Footer } = Layout;
 
 const STORE_PAGE_SIZE = 20;
 const CREATE_TAB = "create";
+const SEARCH_DEBOUNCE_MS = 1000;
 
 export default function StorePage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [category, setCategory] = useState<string>("all");
+  const [searchInput, setSearchInput] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [hasNextPage, setHasNextPage] = useState(false);
 
   const isCreate = category === CREATE_TAB;
+  const searchQuery = debouncedSearch.trim();
+  const listKeyRef = useRef(`${category}::${searchQuery}`);
+  listKeyRef.current = `${category}::${searchQuery}`;
+
+  useEffect(() => {
+    if (isCreate) {
+      setSearchInput("");
+      setDebouncedSearch("");
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      setDebouncedSearch(searchInput);
+    }, SEARCH_DEBOUNCE_MS);
+    return () => window.clearTimeout(timer);
+  }, [searchInput, isCreate]);
 
   useEffect(() => {
     if (isCreate) {
@@ -40,49 +59,69 @@ export default function StorePage() {
       return;
     }
 
+    let cancelled = false;
+
     async function loadFirstPage() {
       setLoading(true);
+      setLoadingMore(false);
       setError(null);
       setPage(1);
       try {
         const data = await listProducts({
           category: category === "all" ? undefined : category,
+          q: searchQuery || undefined,
           page: 1,
           page_size: STORE_PAGE_SIZE,
         });
+        if (cancelled) return;
         setProducts(data.items);
         setHasNextPage(data.metadata.has_next_page);
       } catch (e) {
+        if (cancelled) return;
         setError(e instanceof Error ? e.message : "Failed to load products");
         setProducts([]);
         setHasNextPage(false);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
     void loadFirstPage();
-  }, [category, isCreate]);
+    return () => {
+      cancelled = true;
+    };
+  }, [category, isCreate, searchQuery]);
 
   async function loadMore() {
     if (isCreate || !hasNextPage || loadingMore || loading) return;
 
     const nextPage = page + 1;
+    const requestKey = listKeyRef.current;
     setLoadingMore(true);
     setError(null);
     try {
       const data = await listProducts({
         category: category === "all" ? undefined : category,
+        q: searchQuery || undefined,
         page: nextPage,
         page_size: STORE_PAGE_SIZE,
       });
+      // Drop stale pages if the user changed category/search while loading.
+      if (requestKey !== listKeyRef.current) return;
       setProducts((prev) => [...prev, ...data.items]);
       setPage(nextPage);
       setHasNextPage(data.metadata.has_next_page);
     } catch (e) {
+      if (requestKey !== listKeyRef.current) return;
       setError(e instanceof Error ? e.message : "Failed to load more products");
     } finally {
       setLoadingMore(false);
     }
+  }
+
+  function handleCategoryChange(next: string) {
+    setSearchInput("");
+    setDebouncedSearch("");
+    setCategory(next);
   }
 
   return (
@@ -104,8 +143,8 @@ export default function StorePage() {
           <div className="store-hero-enter">
             <BrandMark size="lg" className="text-white" header="Store" showIcon={false} />
             <p className="mt-6 max-w-md text-base text-white/85 sm:text-lg">
-              General mats, foot mats, door mats, center mats, bath mats, rugs, and cleaning essentials —
-              delivered in 1–3 business days.
+              General mats, foot mats, door mats, center mats, bath mats, rugs, cleaning and bathroom
+              essentials — delivered in 1–3 business days.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <a href="#catalogue">
@@ -145,7 +184,7 @@ export default function StorePage() {
 
         <Tabs
           activeKey={category}
-          onChange={setCategory}
+          onChange={handleCategoryChange}
           items={[
             { key: CREATE_TAB, label: "Create" },
             { key: "all", label: "All" },
@@ -153,6 +192,21 @@ export default function StorePage() {
           ]}
           className="mb-6"
         />
+
+        {!isCreate ? (
+          <div className="mb-6 max-w-md">
+            <Input
+              allowClear
+              size="large"
+              prefix={<SearchOutlined className="text-hek-muted" />}
+              placeholder="Search products…"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              aria-label="Search products"
+            />
+          </div>
+        ) : null}
+
         {isCreate ? (
           <BespokeOrderForm />
         ) : loading ? (
@@ -162,7 +216,9 @@ export default function StorePage() {
         ) : error ? (
           <p className="text-red-600">{error}</p>
         ) : products.length === 0 ? (
-          <p className="text-hek-muted">No products yet — check back soon.</p>
+          <p className="text-hek-muted">
+            {searchQuery ? "No products match your search." : "No products yet — check back soon."}
+          </p>
         ) : (
           <>
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
