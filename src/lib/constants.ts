@@ -13,14 +13,20 @@ const CATEGORY_BY_VALUE = {
 export type CategoryValue = keyof typeof CATEGORY_BY_VALUE;
 
 export const STORE_TAB_CATEGORIES: { value: CategoryValue; label: string }[] = [
-  { value: "general_mats", label: CATEGORY_BY_VALUE.general_mats },
-  { value: "foot_mats", label: CATEGORY_BY_VALUE.foot_mats },
   { value: "door_mats", label: CATEGORY_BY_VALUE.door_mats },
-  { value: "center_mats", label: CATEGORY_BY_VALUE.center_mats },
   { value: "bath_mats", label: CATEGORY_BY_VALUE.bath_mats },
+  { value: "foot_mats", label: CATEGORY_BY_VALUE.foot_mats },
   { value: "rugs", label: CATEGORY_BY_VALUE.rugs },
-  { value: "cleaning_essentials", label: CATEGORY_BY_VALUE.cleaning_essentials },
-  { value: "bathroom_essentials", label: CATEGORY_BY_VALUE.bathroom_essentials },
+  { value: "general_mats", label: CATEGORY_BY_VALUE.general_mats },
+  { value: "center_mats", label: CATEGORY_BY_VALUE.center_mats },
+  {
+    value: "cleaning_essentials",
+    label: CATEGORY_BY_VALUE.cleaning_essentials,
+  },
+  {
+    value: "bathroom_essentials",
+    label: CATEGORY_BY_VALUE.bathroom_essentials,
+  },
 ];
 
 export const CATEGORIES = STORE_TAB_CATEGORIES;
@@ -68,7 +74,9 @@ const LEGACY_STATUS_LABELS: Record<string, string> = {
   rejected: "Rejected",
 };
 
-export function normalizeOrderStatus(status: OrderStatus | string): OrderStatus | string {
+export function normalizeOrderStatus(
+  status: OrderStatus | string,
+): OrderStatus | string {
   if (status === "processing") return "packing";
   if (status === "shipped") return "in_transit";
   return status;
@@ -78,7 +86,9 @@ export function orderStatusLabel(status: OrderStatus | string): string {
   const legacy = LEGACY_STATUS_LABELS[status];
   if (legacy) return legacy;
   const normalized = normalizeOrderStatus(status);
-  return ORDER_STATUSES.find((s) => s.value === normalized)?.label ?? String(status);
+  return (
+    ORDER_STATUSES.find((s) => s.value === normalized)?.label ?? String(status)
+  );
 }
 
 export function orderStatusColor(status: OrderStatus | string): string {
@@ -105,7 +115,10 @@ export function orderStatusColor(status: OrderStatus | string): string {
   }
 }
 
-export function unitDisplayLabel(unit: string, piecesPerBundle?: number): string {
+export function unitDisplayLabel(
+  unit: string,
+  piecesPerBundle?: number,
+): string {
   if (unit === "bundle" && piecesPerBundle && piecesPerBundle > 0) {
     return `Bundle of ${piecesPerBundle}`;
   }
